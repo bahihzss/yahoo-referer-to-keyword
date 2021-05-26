@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Referer to keyword</title>
+  <script>
+    const handleFileChange = (input) => {
+      const file = input.files[0]
+      const reader = new FileReader()
+
+      reader.onload = () => {
+        const csv = reader.result
+        document.getElementById('result').innerText = csv.split('\n').reduce((sub, row) => {
+          const referer = row.split('","')[1]
+
+          if (typeof referer === 'string' && /^https:\/\/shopping\.yahoo\.co\.jp\/search\/?/.test(referer)) {
+            let keyword
+            const url = referer.replace(/"/g, '')
+
+            if (/^https:\/\/shopping\.yahoo\.co\.jp\/search\/.+\//.test(referer)) {
+              keyword = decodeURI(url.replace(/^https:\/\/shopping\.yahoo\.co\.jp\/search\/(.+?)\/.*/, '$1'))
+            } else if (/.*[?&](?:p|va)=([^&]+?)$/.test(referer)) {
+              keyword = decodeURI(url.replace(/.*[?&](?:p|va)=([^&]+?)$/, '$1'))
+            } else {
+              keyword = decodeURI(
+                url
+                  .replace(/^https:\/\/shopping\.yahoo\.co\.jp\/search\/?/, '')
+                  .replace(/\+/g, ' ')
+                  .replace(/.*[?&](?:p|va)=(.+?)[&$].*/, '$1')
+              )
+            }
+            return sub + '\n' + keyword
+          }
+          return sub
+        }, [])
+      }
+
+      reader.readAsText(file)
+    }
+  </script>
+</head>
+<body>
+<input
+  type="file"
+  onchange="handleFileChange(this)"
+>
+<pre id="result"></pre>
+</body>
+</html>
