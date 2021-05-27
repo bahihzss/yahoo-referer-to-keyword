@@ -3,41 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <title>Referer to keyword</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
   <script>
     const handleFileChange = (input) => {
       const file = input.files[0]
       const reader = new FileReader()
 
       reader.onload = () => {
-        const csv = reader.result
-        document.getElementById('result').innerText = csv.split('\n').reduce((sub, row) => {
-          const referer = row.split('","')[1]
+        const { data } = Papa.parse(reader.result.replace(/\r\n$/g, ''), { header: true })
 
-          if (typeof referer === 'string' && /^https:\/\/shopping\.yahoo\.co\.jp\/search\/?/.test(referer)) {
-            let keyword
-            const url = referer.replace(/"/g, '')
+        const resultView = document.getElementById('result')
 
-            if (/^https:\/\/shopping\.yahoo\.co\.jp\/search\/.+\//.test(referer)) {
-              keyword = decodeURI(url.replace(/^https:\/\/shopping\.yahoo\.co\.jp\/search\/(.+?)\/.*/, '$1'))
-            } else if (/.*[?&](?:p|va)=([^&]+?)$/.test(referer)) {
-              keyword = decodeURI(url.replace(/.*[?&](?:p|va)=([^&]+?)$/, '$1'))
-            } else {
-              keyword = decodeURI(
-                url
-                  .replace(/^https:\/\/shopping\.yahoo\.co\.jp\/search\/?/, '')
-                  .replace(/\+/g, ' ')
-                  .replace(/.*[?&](?:p|va)=(.+?)[&$].*/, '$1')
-              )
-            }
-            return sub + '\n' + keyword
+        resultView.innerText = data.reduce((sub, { Referer }) => {
+          if (typeof Referer === 'string' && /^https:\/\/shopping\.yahoo\.co\.jp\/search\/?/.test(Referer)) {
+            const url = new URL(Referer.replace(/&amp;/g, '&'))
+            const params = url.searchParams
+            const keyword = params.get('p') || params.get('va') || decodeURI(url.pathname).replace(/^\/search\/(.+?)\/.*/, '$1')
+            return sub + '\n' +　keyword
           }
           return sub
-        }, [])
+        }, '')
       }
 
       reader.readAsText(file)
     }
   </script>
+  <style>
+    #result {
+        font-size: 10px;
+    }
+  </style>
 </head>
 <body>
 <input
